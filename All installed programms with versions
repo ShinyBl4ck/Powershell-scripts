@@ -1,0 +1,22 @@
+#Computerinformationen abrufen
+$computer = Get-ComputerInfo
+
+# Pfade für Dateien festlegen
+$directoryPath = "C:\_Install"
+$csvFile = Join-Path -Path $directoryPath -ChildPath ($computer.CsName +"-Programme.csv")
+
+# Überprüfen, ob das Verzeichnis existiert
+if (-not (Test-Path -Path $directoryPath)) {
+    New-Item -Path $directoryPath -ItemType Directory
+}
+
+# 32-Bit und 64-Bit Programme abrufen und in eine Liste zusammenführen
+$program32 = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* | Where-Object { $_.DisplayName -ne $null }
+$program64 = Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Where-Object { $_.DisplayName -ne $null }
+$allPrograms = $program32 + $program64 | Sort-Object DisplayName | Select-Object DisplayName, DisplayVersion
+
+# Ergebnisse in eine CSV-Datei exportieren
+$allPrograms | Export-Csv -LiteralPath $csvFile -Encoding UTF8 -UseCulture -NoTypeInformation
+
+# CSV-Datei öffnen
+Start-Process -FilePath $csvFile
